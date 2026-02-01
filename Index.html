@@ -1,0 +1,1623 @@
+<!DOCTYPE html><html lang="en"><head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>OpenStreetMap Non-Building Tag Classifications</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'muted-green': '#6B8E6B',
+                        'warm-grey': '#F5F4F2',
+                        'deep-forest': '#3A5F3A',
+                        'soft-gold': '#D4AF37'
+                    },
+                    fontFamily: {
+                        'serif': ['Playfair Display', 'serif'],
+                        'sans': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <style>
+        .toc-fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: linear-gradient(135deg, #3A5F3A 0%, #2A4F2A 100%);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 2rem 1.5rem;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .main-content {
+            margin-left: 280px;
+            min-height: 100vh;
+        }
+        
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+        
+        .hero-title {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, rgba(58, 95, 58, 0.9) 0%, rgba(42, 79, 42, 0.95) 100%);
+            color: white;
+            padding: 3rem;
+            border-radius: 1rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-title::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .hero-visual {
+            background: linear-gradient(45deg, #F5F4F2 0%, #E8E6E3 100%);
+            padding: 2rem;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+        }
+        
+        .citation-link {
+            color: #D4AF37;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .citation-link:hover {
+            color: #F4D03F;
+            text-decoration: underline;
+        }
+        
+        .section-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, #6B8E6B 50%, transparent 100%);
+            margin: 4rem 0;
+        }
+        
+        @media (max-width: 1024px) {
+            .toc-fixed {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .toc-fixed.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .hero-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title {
+                padding: 1.5rem;
+            }
+            
+            .hero-title h1 {
+                font-size: 1.875rem; /* 30px */
+                line-height: 2.25rem;
+            }
+            
+            .hero-title p {
+                font-size: 1rem;
+                line-height: 1.5rem;
+            }
+            
+            .hero-visual {
+                min-height: 150px;
+            }
+        }
+        
+        img {
+            max-width: 100%;
+        }
+    </style>
+  </head>
+
+  <body class="bg-warm-grey text-gray-800 font-sans overflow-x-hidden">
+
+    <!-- Mobile TOC Toggle -->
+    <button id="toc-toggle" class="lg:hidden fixed top-4 left-4 z-50 bg-deep-forest text-white p-3 rounded-full shadow-lg">
+      <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Table of Contents -->
+    <nav class="toc-fixed" id="toc">
+      <div class="text-white">
+        <h3 class="text-xl font-bold mb-6 text-soft-gold">Contents</h3>
+        <ul class="space-y-2 text-sm">
+          <li>
+            <a href="#executive-summary" class="block py-1 hover:text-soft-gold transition-colors">Executive Summary</a>
+          </li>
+          <li>
+            <a href="#primary-categories" class="block py-1 hover:text-soft-gold transition-colors">Primary Feature Categories</a>
+          </li>
+          <li class="ml-4">
+            <a href="#transportation" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Transportation Infrastructure</a>
+          </li>
+          <li class="ml-4">
+            <a href="#settlements" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Human Settlement &amp; Administration</a>
+          </li>
+          <li class="ml-4">
+            <a href="#landuse" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Land Use &amp; Natural Environment</a>
+          </li>
+          <li class="ml-4">
+            <a href="#activities" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Human Activities &amp; Services</a>
+          </li>
+          <li class="ml-4">
+            <a href="#infrastructure" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Infrastructure &amp; Utilities</a>
+          </li>
+          <li class="ml-4">
+            <a href="#safety" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Safety &amp; Emergency Services</a>
+          </li>
+          <li class="ml-4">
+            <a href="#heritage" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Historical &amp; Cultural Heritage</a>
+          </li>
+          <li class="ml-4">
+            <a href="#barriers" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Barriers &amp; Access Control</a>
+          </li>
+          <li class="ml-4">
+            <a href="#military" class="block py-1 hover:text-soft-gold transition-colors opacity-80">Military &amp; Security</a>
+          </li>
+          <li>
+            <a href="#attributes" class="block py-1 hover:text-soft-gold transition-colors">Additional Properties</a>
+          </li>
+          <li>
+            <a href="#specialized" class="block py-1 hover:text-soft-gold transition-colors">Specialized Categories</a>
+          </li>
+          <li>
+            <a href="#conclusion" class="block py-1 hover:text-soft-gold transition-colors">Conclusion</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Overlay for mobile menu -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+      <!-- Hero Section -->
+      <section class="px-6 py-12 max-w-7xl mx-auto">
+        <div class="hero-grid">
+          <div class="hero-title">
+            <div class="relative z-10">
+              <h1 class="text-4xl lg:text-5xl font-serif italic mb-4 leading-tight">
+                OpenStreetMap Tag Classifications
+              </h1>
+              <p class="text-xl opacity-90 font-light">
+                A Comprehensive Analysis of Non-Building Geographic Features
+              </p>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <img src="https://kimi-web-img.moonshot.cn/img/cloud.urbansim.com/fcb19cd7905a4087b35837bf95d8a40186717c37.png" alt="OpenStreetMap interface with transportation layers" class="w-full h-full object-cover rounded-lg" size="large" aspect="wide" style="photo" query="OpenStreetMap interface" referrerpolicy="no-referrer" data-modified="1" data-score="0.00"/>
+          </div>
+
+          <div class="hero-visual">
+            <img src="https://kimi-web-img.moonshot.cn/img/stamen.com/f99f87d01377d276799062d886c4ce36a0821a64.png" alt="Various map symbols for OSM" class="w-full h-full object-cover rounded-lg" size="medium" aspect="wide" style="clipart" query="OpenStreetMap symbols" referrerpolicy="no-referrer" data-modified="1" data-score="0.00"/>
+          </div>
+        </div>
+      </section>
+
+      <!-- Executive Summary -->
+      <section id="executive-summary" class="px-6 py-8 max-w-5xl mx-auto">
+        <div class="bg-white rounded-xl shadow-lg p-8 border-l-4 border-muted-green">
+          <h2 class="text-3xl font-serif font-bold mb-6 text-deep-forest">Executive Summary</h2>
+          <div class="prose prose-lg max-w-none">
+            <p class="text-gray-700 leading-relaxed mb-4">
+              OpenStreetMap&#39;s non-building tag classifications form a comprehensive system for mapping transportation infrastructure, human settlements, land use, natural features, and human activities. The <strong>highway</strong> category dominates with over <strong>214 million elements</strong>, while specialized categories like <strong>aerialway</strong>, <strong>aeroway</strong>, and <strong>railway</strong> enable precise documentation of complex infrastructure.
+            </p>
+            <p class="text-gray-700 leading-relaxed">
+              Key organizational principles include hierarchical classification (e.g., motorway → residential), lifecycle tagging (proposed → demolished), and dual representation approaches (separate ways vs. attributes) for features like sidewalks and cycleways.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider"></div>
+
+      <!-- Primary Feature Categories -->
+      <section id="primary-categories" class="px-6 py-12 max-w-7xl mx-auto">
+
+        <!-- Transportation Infrastructure -->
+        <div id="transportation" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Transportation Infrastructure</h2>
+
+          <!-- Aerialway -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Aerialway</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>aerialway</strong> category encompasses cable-propelled transportation systems essential for mountainous regions, ski resorts, and urban vertical transit. These systems are classified by mechanical operation and intended use, with detailed tagging enabling precise network modeling for tourism planning, emergency response, and accessibility analysis <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h4 class="text-lg font-semibold mb-4">Aerialway Types and Applications</h4>
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-2">Cable Cars &amp; Gondolas</h5>
+                  <p class="text-sm text-gray-600">Enclosed cabins on continuous or reciprocating cables for urban transit, mountain crossings, and ski resorts.</p>
+                </div>
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-2">Chair Lifts</h5>
+                  <p class="text-sm text-gray-600">Open-air seats (single to 6-person) primarily for ski resort uphill transport.</p>
+                </div>
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-2">Drag Lifts</h5>
+                  <p class="text-sm text-gray-600">Surface pulls including T-bars, J-bars, and platter lifts for beginner areas.</p>
+                </div>
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-2">Goods Aerialways</h5>
+                  <p class="text-sm text-gray-600">Material transport systems for mining, logging, and construction in rugged terrain.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-muted-green/10 to-deep-forest/10 rounded-lg p-6">
+              <h4 class="text-lg font-semibold mb-3">Key Attributes</h4>
+              <p class="text-sm text-gray-700">Key attributes include <strong>capacity</strong> (persons/hour), <strong>duration</strong>, <strong>seasonal operation</strong>, <strong>lighting</strong>, and <strong>heating provisions</strong>. Stations (`aerialway=station`) and pylons (`aerialway=pylon`) complete the infrastructure mapping. Modern urban gondola implementations in Medellín, Portland, and numerous alpine cities demonstrate the category&#39;s growing importance for cost-effective vertical transportation.</p>
+            </div>
+          </div>
+
+          <!-- Aeroway -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Aeroway</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>aeroway</strong> category provides comprehensive aviation infrastructure mapping, from international airports to private helipads. This classification supports flight planning, noise impact assessment, and urban planning around airport zones <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-3 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Airports / Aerodromes</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                  <li>• International airports</li>
+                  <li>• Regional facilities</li>
+                  <li>• Municipal airports</li>
+                  <li>• Private aviation</li>
+                </ul>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Runway Systems</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                  <li>• Length, width specifications</li>
+                  <li>• Surface materials</li>
+                  <li>• Lighting systems</li>
+                  <li>• Load ratings</li>
+                </ul>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Supporting Infrastructure</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                  <li>• Fueling facilities</li>
+                  <li>• De-icing stations</li>
+                  <li>• Fire/rescue services</li>
+                  <li>• Air traffic control</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Highway -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Highway</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>highway</strong> category is <strong>OpenStreetMap&#39;s most extensive classification system</strong>, with approximately <strong>214 million elements globally</strong>—representing roughly 21% of all tagged OSM features <a href="https://heigit.org/a-basic-guide-to-osm-data-filtering-2/" class="citation-link" target="_blank">[118]</a>. This hierarchical framework enables sophisticated routing, transportation planning, and network analysis.
+            </p>
+
+            <!-- Road Classifications -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h4 class="text-lg font-semibold mb-4">Road Classifications Hierarchy</h4>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-2 text-left font-semibold">Class</th>
+                      <th class="px-4 py-2 text-left font-semibold">Function</th>
+                      <th class="px-4 py-2 text-left font-semibold">Characteristics</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    <tr>
+                      <td class="px-4 py-2 font-medium text-deep-forest">Motorway</td>
+                      <td class="px-4 py-2">Highest-grade, high-speed, long-distance</td>
+                      <td class="px-4 py-2">Full access control, grade-separated, multiple lanes</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-medium text-deep-forest">Trunk</td>
+                      <td class="px-4 py-2">Major national/regional routes</td>
+                      <td class="px-4 py-2">Near-motorway standards, occasional at-grade intersections</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-medium text-deep-forest">Primary</td>
+                      <td class="px-4 py-2">Main urban arterials, inter-city connectors</td>
+                      <td class="px-4 py-2">Significant traffic volumes, regional importance</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-medium text-deep-forest">Secondary</td>
+                      <td class="px-4 py-2">Town/village connections, urban distributors</td>
+                      <td class="px-4 py-2">Moderate traffic, more frequent access points</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-medium text-deep-forest">Residential</td>
+                      <td class="px-4 py-2">Property access in built-up areas</td>
+                      <td class="px-4 py-2">Traffic calming, low speeds, direct frontage</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Special Road Types -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                <h5 class="font-semibold text-blue-800 mb-2">Bridges</h5>
+                <p class="text-xs text-blue-600">Elevated crossings with structure type, material, and clearance specifications</p>
+              </div>
+              <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4">
+                <h5 class="font-semibold text-gray-800 mb-2">Tunnels</h5>
+                <p class="text-xs text-gray-600">Underground passages with length, ventilation, and emergency facilities</p>
+              </div>
+              <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
+                <h5 class="font-semibold text-green-800 mb-2">Fords</h5>
+                <p class="text-xs text-green-600">At-grade water crossings with seasonal accessibility indicators</p>
+              </div>
+              <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4">
+                <h5 class="font-semibold text-orange-800 mb-2">Steps</h5>
+                <p class="text-xs text-orange-600">Stairways for pedestrian vertical movement with step count and handrails</p>
+              </div>
+            </div>
+
+            <!-- Sidewalk and Cycleway Features -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h4 class="text-lg font-semibold mb-4">Dual Representation Approaches</h4>
+              <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th class="px-4 py-2 text-left font-semibold">Approach</th>
+                      <th class="px-4 py-2 text-left font-semibold">Method</th>
+                      <th class="px-4 py-2 text-left font-semibold">Advantages</th>
+                      <th class="px-4 py-2 text-left font-semibold">Trade-offs</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200">
+                    <tr>
+                      <td class="px-4 py-2 font-medium">Separate Ways</td>
+                      <td class="px-4 py-2">`highway=footway` + `footway=sidewalk`</td>
+                      <td class="px-4 py-2">Precise geometry, connectivity modeling</td>
+                      <td class="px-4 py-2">Increased data volume, maintenance complexity</td>
+                    </tr>
+                    <tr>
+                      <td class="px-4 py-2 font-medium">Attribute Tagging</td>
+                      <td class="px-4 py-2">`sidewalk=left/right/both/separate`</td>
+                      <td class="px-4 py-2">Data efficiency, simpler maintenance</td>
+                      <td class="px-4 py-2">Reduced precision, cannot represent complex configurations</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Railway -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Railway</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>railway</strong> category encompasses the full spectrum of rail-based transportation, from high-speed corridors to heritage operations <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-3 gap-6">
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Mainline Tracks</h4>
+                <ul class="text-sm text-gray-600 space-y-2">
+                  <li>• Primary corridors with highest standards</li>
+                  <li>• Branch lines for secondary connections</li>
+                  <li>• Sidings for passing loops and storage</li>
+                  <li>• Standard gauge (1435mm) heavy traffic</li>
+                </ul>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Specialized Systems</h4>
+                <ul class="text-sm text-gray-600 space-y-2">
+                  <li>• Narrow gauge for industrial applications</li>
+                  <li>• Miniature railways for recreation</li>
+                  <li>• Funicular systems for steep gradients</li>
+                  <li>• Tram and light rail urban transit</li>
+                </ul>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Infrastructure</h4>
+                <ul class="text-sm text-gray-600 space-y-2">
+                  <li>• Stations with platform specifications</li>
+                  <li>• Signaling systems and control centers</li>
+                  <li>• Level crossings with protection types</li>
+                  <li>• Bridges and tunnels for grade separation</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Public Transport -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Public Transport</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>public_transport</strong> framework integrates diverse collective mobility services <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-gradient-to-r from-muted-green/10 to-deep-forest/10 rounded-lg p-6">
+              <h4 class="text-lg font-semibold mb-4">Route Relations Integration</h4>
+              <p class="text-sm text-gray-700 mb-4">
+                Route relations aggregate linear features into coherent transportation corridors for navigation and service description. The <strong>public_transport:version=2</strong> schema enhances modeling with route variants, service frequencies, and operational periods.
+              </p>
+              <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Bus Routes</h5>
+                  <p class="text-xs text-gray-600">Stop sequences, street paths, schedule variants</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Rail Routes</h5>
+                  <p class="text-xs text-gray-600">Branching patterns, express/local variants</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Ferry Routes</h5>
+                  <p class="text-xs text-gray-600">Tidal, seasonal, weather-dependent operations</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Human Settlements -->
+        <div id="settlements" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Human Settlement and Administration</h2>
+
+          <!-- Boundary -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Boundary</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              Boundaries in OpenStreetMap represent <strong>territorial divisions</strong> of diverse types, typically as relations comprising multiple way segments <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-2 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Administrative Boundaries</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">National Level</h5>
+                    <p class="text-xs text-gray-600">Sovereign states, international borders, disputed territories</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">State/Provincial</h5>
+                    <p class="text-xs text-gray-600">Major subnational divisions with varying autonomy</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Municipal</h5>
+                    <p class="text-xs text-gray-600">Local government areas, cities, towns, villages</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Non-Administrative Boundaries</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Protected Areas</h5>
+                    <p class="text-xs text-gray-600">Conservation restrictions, national parks, nature reserves</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Military Zones</h5>
+                    <p class="text-xs text-gray-600">Security restrictions, bases, training areas</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Maritime Boundaries</h5>
+                    <p class="text-xs text-gray-600">Ocean jurisdiction, territorial seas, EEZs</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Place -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Place</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>place</strong> category provides <strong>hierarchical naming and classification</strong> of settlements and localities <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h4 class="text-lg font-semibold mb-4">Settlement Hierarchy</h4>
+              <div class="space-y-4">
+                <div class="border-l-4 border-muted-green pl-4">
+                  <h5 class="font-semibold text-deep-forest">Urban Settlements</h5>
+                  <div class="grid md:grid-cols-3 gap-2 mt-2 text-sm">
+                    <div><strong>Cities:</strong> Major population and economic centers</div>
+                    <div><strong>Towns:</strong> Smaller urban centers</div>
+                    <div><strong>Suburbs:</strong> Peripheral residential areas</div>
+                  </div>
+                </div>
+                <div class="border-l-4 border-soft-gold pl-4">
+                  <h5 class="font-semibold text-deep-forest">Rural Settlements</h5>
+                  <div class="grid md:grid-cols-3 gap-2 mt-2 text-sm">
+                    <div><strong>Villages:</strong> Compact rural settlements</div>
+                    <div><strong>Hamlets:</strong> Smaller clusters</div>
+                    <div><strong>Farms:</strong> Agricultural operations</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Land Use -->
+        <div id="landuse" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Land Use and Natural Environment</h2>
+
+          <!-- Landuse -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Landuse</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>landuse</strong> category classifies areas by <strong>human purpose and management</strong>, fundamental for planning and environmental assessment <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-3 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Developed Land</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                  <li>• Residential (urban/suburban/rural)</li>
+                  <li>• Commercial and retail</li>
+                  <li>• Industrial areas</li>
+                  <li>• Brownfield sites</li>
+                  <li>• Construction areas</li>
+                </ul>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Agricultural Land</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                  <li>• Farmland and farmyards</li>
+                  <li>• Orchards and vineyards</li>
+                  <li>• Plant nurseries</li>
+                  <li>• Meadows and pastures</li>
+                  <li>• Managed forests</li>
+                </ul>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4">
+                <h4 class="font-semibold text-deep-forest mb-3">Water-Related</h4>
+                <ul class="text-sm text-gray-600 space-y-1">
+                  <li>• Reservoirs and basins</li>
+                  <li>• Salt ponds</li>
+                  <li>• Wetlands and marshes</li>
+                  <li>• Mudflats and tidal areas</li>
+                  <li>• Water management</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Natural -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Natural</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>natural</strong> category documents <strong>physical environmental features</strong> independent of human land use designation <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-gradient-to-br from-green-50 to-blue-50 rounded-lg p-6 mb-6">
+              <h4 class="text-lg font-semibold mb-4">Feature Categories</h4>
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-3">Vegetation Systems</h5>
+                  <div class="space-y-2 text-sm text-gray-700">
+                    <div>• <strong>Forests and woodlands:</strong> Tree-dominated ecosystems</div>
+                    <div>• <strong>Scrub and heath:</strong> Shrub-dominated vegetation</div>
+                    <div>• <strong>Grasslands:</strong> Herbaceous-dominated systems</div>
+                    <div>• <strong>Tundra:</strong> Treeless Arctic/alpine regions</div>
+                    <div>• <strong>Glaciers:</strong> Permanent ice masses</div>
+                  </div>
+                </div>
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-3">Water Features</h5>
+                  <div class="space-y-2 text-sm text-gray-700">
+                    <div>• <strong>Rivers and streams:</strong> Flowing freshwater</div>
+                    <div>• <strong>Lakes and ponds:</strong> Standing water bodies</div>
+                    <div>• <strong>Wetlands:</strong> Saturated soil systems</div>
+                    <div>• <strong>Springs and geysers:</strong> Groundwater discharge</div>
+                    <div>• <strong>Reefs:</strong> Biological marine structures</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Human Activities -->
+        <div id="activities" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Human Activities and Services</h2>
+
+          <!-- Amenity -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Amenity</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>amenity</strong> category encompasses <strong>facilities and services supporting human activity and quality of life</strong>—one of OSM&#39;s most diverse classification systems <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-2 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Sustenance &amp; Education</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Food Service</h5>
+                    <p class="text-xs text-gray-600">Restaurants, cafes, bars, fast food, food courts with cuisine tagging</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Education Facilities</h5>
+                    <p class="text-xs text-gray-600">Schools, universities, libraries, museums, specialized training centers</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Healthcare &amp; Public Services</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Healthcare</h5>
+                    <p class="text-xs text-gray-600">Hospitals, clinics, pharmacies, veterinary services, nursing homes</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Public Safety</h5>
+                    <p class="text-xs text-gray-600">Police stations, fire stations, courthouses, emergency access points</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shop -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Shop</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>shop</strong> category classifies <strong>retail establishments by merchandise type</strong>, supporting commercial location analysis and consumer wayfinding <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-gradient-to-r from-muted-green/10 to-deep-forest/10 rounded-lg p-6">
+              <h4 class="text-lg font-semibold mb-4">Retail Classification Categories</h4>
+              <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Food &amp; Beverages</h5>
+                  <p class="text-xs text-gray-600">Supermarkets, convenience stores, specialty food shops, markets</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Clothing &amp; Fashion</h5>
+                  <p class="text-xs text-gray-600">Apparel stores, shoe shops, jewelry, accessories</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Electronics</h5>
+                  <p class="text-xs text-gray-600">Consumer technology, mobile phones, appliances, audio/video</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">DIY &amp; Building</h5>
+                  <p class="text-xs text-gray-600">Hardware stores, garden centers, building materials</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Health &amp; Beauty</h5>
+                  <p class="text-xs text-gray-600">Pharmacies, cosmetics, opticians, medical supplies</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Specialty Retail</h5>
+                  <p class="text-xs text-gray-600">Art supplies, musical instruments, books, toys, hobbies</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Craft -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Craft</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>craft</strong> category captures <strong>workplaces for skilled manual production</strong>, preserving traditional techniques and supporting local economies <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>
+              <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[329]</a>.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h4 class="text-lg font-semibold mb-4">Traditional Craft Specializations</h4>
+              <p class="text-sm text-gray-700 mb-4">
+                Approximately <strong>50 distinct trade specializations</strong> exist, from `agricultural_engines` to `bookbinder` to `candlemaker`, enabling granular economic and cultural heritage mapping.
+              </p>
+              <div class="grid md:grid-cols-4 gap-3 text-sm">
+                <div class="bg-gray-50 rounded p-2 text-center">Pottery</div>
+                <div class="bg-gray-50 rounded p-2 text-center">Weaving</div>
+                <div class="bg-gray-50 rounded p-2 text-center">Metalwork</div>
+                <div class="bg-gray-50 rounded p-2 text-center">Woodworking</div>
+                <div class="bg-gray-50 rounded p-2 text-center">Blacksmithing</div>
+                <div class="bg-gray-50 rounded p-2 text-center">Glassblowing</div>
+                <div class="bg-gray-50 rounded p-2 text-center">Leatherwork</div>
+                <div class="bg-gray-50 rounded p-2 text-center">Bookbinding</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Infrastructure -->
+        <div id="infrastructure" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Infrastructure and Utilities</h2>
+
+          <!-- Power -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Power</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>power</strong> category classifies <strong>electrical energy infrastructure from generation through distribution</strong>
+              <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-2 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Generation Sources</h4>
+                <div class="space-y-3">
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
+                    <span class="text-sm">Thermal (Coal, Gas, Oil)</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-yellow-500 rounded-full mr-3"></div>
+                    <span class="text-sm">Nuclear Fission</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full mr-3"></div>
+                    <span class="text-sm">Hydroelectric</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                    <span class="text-sm">Wind &amp; Solar</span>
+                  </div>
+                  <div class="flex items-center">
+                    <div class="w-3 h-3 bg-orange-500 rounded-full mr-3"></div>
+                    <span class="text-sm">Geothermal &amp; Biomass</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Distribution Components</h4>
+                <ul class="text-sm text-gray-600 space-y-2">
+                  <li>• <strong>Substations:</strong> Voltage transformation and switching</li>
+                  <li>• <strong>Power Lines:</strong> Bulk energy transport systems</li>
+                  <li>• <strong>Transformer Stations:</strong> Local voltage adjustment</li>
+                  <li>• <strong>Storage Systems:</strong> Battery and pumped-storage facilities</li>
+                  <li>• <strong>Converter Stations:</strong> AC/DC conversion for HVDC transmission</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- Man Made -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Man Made</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>man_made</strong> category encompasses <strong>diverse constructed features</strong> not covered by more specific categories <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
+                <h5 class="font-semibold text-purple-800 mb-2">Communication</h5>
+                <p class="text-xs text-purple-600">Towers, masts, satellite dishes, radar installations</p>
+              </div>
+              <div class="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-lg p-4">
+                <h5 class="font-semibold text-indigo-800 mb-2">Observation</h5>
+                <p class="text-xs text-indigo-600">Lighthouses, observation towers, watchtowers, water towers</p>
+              </div>
+              <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4">
+                <h5 class="font-semibold text-gray-800 mb-2">Storage</h5>
+                <p class="text-xs text-gray-600">Silos, storage tanks, gasometers, pipelines</p>
+              </div>
+              <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
+                <h5 class="font-semibold text-blue-800 mb-2">Barriers</h5>
+                <p class="text-xs text-blue-600">Embankments, dykes, breakwaters, piers, jetties</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Telecom -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Telecom</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>telecom</strong> category addresses <strong>telecommunications infrastructure and services</strong>
+              <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h4 class="text-lg font-semibold mb-4">Telecommunications Infrastructure</h4>
+              <div class="grid md:grid-cols-3 gap-4">
+                <div class="text-center">
+                  <i class="fas fa-server text-2xl text-muted-green mb-2"></i>
+                  <h5 class="font-semibold text-sm">Core Infrastructure</h5>
+                  <p class="text-xs text-gray-600">Telephone exchanges, data centers</p>
+                </div>
+                <div class="text-center">
+                  <i class="fas fa-wifi text-2xl text-muted-green mb-2"></i>
+                  <h5 class="font-semibold text-sm">Distribution</h5>
+                  <p class="text-xs text-gray-600">Telephone poles, cable cabinets</p>
+                </div>
+                <div class="text-center">
+                  <i class="fas fa-phone text-2xl text-muted-green mb-2"></i>
+                  <h5 class="font-semibold text-sm">Public Access</h5>
+                  <p class="text-xs text-gray-600">Public phones, Wi-Fi hotspots</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Safety &amp; Emergency -->
+        <div id="safety" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Safety, Emergency, and Healthcare Services</h2>
+
+          <!-- Emergency -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Emergency</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>emergency</strong> category provides <strong>specialized tagging for rescue, response, and safety infrastructure</strong>
+              <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-2 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Medical Rescue Services</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Ambulance Stations</h5>
+                    <p class="text-xs text-gray-600">Ground patient transport with rapid response capabilities</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Specialized Rescue</h5>
+                    <p class="text-xs text-gray-600">Mountain rescue, cave rescue, water rescue posts</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Air Ambulance</h5>
+                    <p class="text-xs text-gray-600">Helipads and emergency landing sites for aerial evacuation</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Fire &amp; Lifeguard Services</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Fire Stations</h5>
+                    <p class="text-xs text-gray-600">Professional, volunteer, and retained fire departments</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Detection Systems</h5>
+                    <p class="text-xs text-gray-600">Fire lookout towers for early wildfire detection</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Lifeguard Services</h5>
+                    <p class="text-xs text-gray-600">Beach and pool supervision with seasonal operations</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Healthcare -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Healthcare</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              Beyond amenity-tagged facilities, <strong>healthcare as a primary feature</strong> enables comprehensive health system mapping <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h4 class="text-lg font-semibold mb-4">Healthcare Facility Network</h4>
+              <div class="grid md:grid-cols-3 gap-4">
+                <div class="border-l-4 border-red-400 pl-4">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Acute Care</h5>
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• General hospitals</li>
+                    <li>• Specialized hospitals</li>
+                    <li>• Emergency departments</li>
+                    <li>• Surgical centers</li>
+                  </ul>
+                </div>
+                <div class="border-l-4 border-blue-400 pl-4">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Primary &amp; Outpatient</h5>
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• Health centers</li>
+                    <li>• Doctor&#39;s offices</li>
+                    <li>• Dental clinics</li>
+                    <li>• Urgent care centers</li>
+                  </ul>
+                </div>
+                <div class="border-l-4 border-green-400 pl-4">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Specialized Services</h5>
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• Diagnostic imaging</li>
+                    <li>• Rehabilitation centers</li>
+                    <li>• Mental health facilities</li>
+                    <li>• Alternative medicine</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Heritage -->
+        <div id="heritage" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Historical and Cultural Heritage</h2>
+
+          <!-- Historic -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Historic</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>historic</strong> category preserves <strong>cultural memory through documented heritage features</strong>
+              <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-2 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Architectural Heritage</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Monuments &amp; Memorials</h5>
+                    <p class="text-xs text-gray-600">Statues, plaques, cenotaphs commemorating persons and events</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Historic Buildings</h5>
+                    <p class="text-xs text-gray-600">Castles, churches, manor houses, and other significant structures</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Industrial Heritage</h5>
+                    <p class="text-xs text-gray-600">Historic factories, mills, railway lines, canals, and mines</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Archaeological Sites</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Excavation Sites</h5>
+                    <p class="text-xs text-gray-600">Active archaeological research areas with controlled access</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Ancient Settlements</h5>
+                    <p class="text-xs text-gray-600">Known archaeological remains with preservation requirements</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Rock Art Sites</h5>
+                    <p class="text-xs text-gray-600">Petroglyphs and other vulnerable cultural expressions</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Geological -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Geological Heritage</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              Geological features receive heritage designation when significant for <strong>scientific understanding, education, or aesthetic appreciation</strong>
+              <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-gradient-to-br from-stone-50 to-amber-50 rounded-lg p-6">
+              <h4 class="text-lg font-semibold mb-4">Geological and Geomorphological Features</h4>
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-3">Rock and Mineral Sites</h5>
+                  <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• Notable rock formations and scenic geology</li>
+                    <li>• Caves and karst features with speleological interest</li>
+                    <li>• Mines and quarries with geological significance</li>
+                    <li>• Fossil sites with paleontological importance</li>
+                  </ul>
+                </div>
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-3">Geomorphological Features</h5>
+                  <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• Volcanic features, craters, and lava fields</li>
+                    <li>• Glacial features including moraines and drumlins</li>
+                    <li>• Karst landscapes with sinkholes and limestone pavements</li>
+                    <li>• Unique erosion and deposition landforms</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barriers -->
+        <div id="barriers" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Barriers and Access Control</h2>
+
+          <!-- Barrier -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Barrier</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>barrier</strong> category documents <strong>physical obstacles and access control mechanisms</strong>
+              <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="grid lg:grid-cols-3 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Linear Barriers</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Walls &amp; Fences</h5>
+                    <p class="text-xs text-gray-600">Masonry, concrete, metal, wood, and wire barriers for property boundaries and security</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Vegetation Barriers</h5>
+                    <p class="text-xs text-gray-600">Hedges and living fences for aesthetic boundaries</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Specialized Barriers</h5>
+                    <p class="text-xs text-gray-600">Retaining walls, noise barriers, guard rails, crash barriers</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Access Control</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Toll Systems</h5>
+                    <p class="text-xs text-gray-600">Booths and gates for payment collection and demand management</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Security Checkpoints</h5>
+                    <p class="text-xs text-gray-600">Identity verification and border control points</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Vehicle Exclusion</h5>
+                    <p class="text-xs text-gray-600">Bollards, gates, and barriers for controlled access</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Temporary Barriers</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Crowd Control</h5>
+                    <p class="text-xs text-gray-600">Chain and rope barriers for queue management</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Rapid Deployment</h5>
+                    <p class="text-xs text-gray-600">Jersey barriers and concrete blocks for emergency protection</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Security Measures</h5>
+                    <p class="text-xs text-gray-600">Spikes and spike strips for vehicle immobilization</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Military -->
+        <div id="military" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Military and Security</h2>
+
+          <!-- Military -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Military</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              The <strong>military</strong> category addresses <strong>defense infrastructure and installations</strong>, with sensitivity considerations for operational security <a href="https://blog.csdn.net/ZauberC/article/details/125897756" class="citation-link" target="_blank">[13]</a>.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+              <h4 class="text-lg font-semibold mb-4">Defense Infrastructure Categories</h4>
+              <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="border-l-4 border-gray-400 pl-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Protection Facilities</h5>
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• Bunkers and air-raid shelters</li>
+                    <li>• Fallout shelters</li>
+                    <li>• Missile silos</li>
+                    <li>• Rocket launch sites</li>
+                  </ul>
+                </div>
+                <div class="border-l-4 border-blue-400 pl-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Surveillance</h5>
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• Radar stations</li>
+                    <li>• Early warning systems</li>
+                    <li>• Surveillance installations</li>
+                    <li>• Communication monitoring</li>
+                  </ul>
+                </div>
+                <div class="border-l-4 border-green-400 pl-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Bases &amp; Training</h5>
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• Army barracks</li>
+                    <li>• Air force bases</li>
+                    <li>• Naval bases</li>
+                    <li>• Training areas</li>
+                  </ul>
+                </div>
+                <div class="border-l-4 border-red-400 pl-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Historical Sites</h5>
+                  <ul class="text-xs text-gray-600 space-y-1">
+                    <li>• Former military installations</li>
+                    <li>• Battlefields</li>
+                    <li>• Military cemeteries</li>
+                    <li>• War memorials</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-muted-green/10 to-deep-forest/10 rounded-lg p-6">
+              <h4 class="text-lg font-semibold mb-4">Historical Military Heritage</h4>
+              <p class="text-sm text-gray-700 mb-4">
+                Former military installations, battlefields, and defensive positions represent important cultural heritage with educational and commemorative value. These sites require careful documentation while respecting their historical significance and potential sensitivity.
+              </p>
+              <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Fortifications</h5>
+                  <p class="text-xs text-gray-600">Medieval to modern defensive structures and walls</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Battlefields</h5>
+                  <p class="text-xs text-gray-600">Sites of historical military conflicts and events</p>
+                </div>
+                <div class="bg-white/70 rounded p-3">
+                  <h5 class="font-semibold text-deep-forest text-sm mb-2">Memorial Sites</h5>
+                  <p class="text-xs text-gray-600">Cemeteries and monuments honoring military service</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Additional Properties -->
+        <div id="attributes" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Additional Properties and Attributes</h2>
+
+          <div class="grid lg:grid-cols-2 gap-6 mb-8">
+            <!-- Addresses -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl font-serif font-semibold mb-4 text-muted-green">Addresses</h3>
+              <div class="space-y-3">
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Individual House Tags</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">addr:housenumber=*</code> - House number (e.g., &#34;123&#34;, &#34;10A&#34;)</div>
+                    <div><code class="bg-gray-100 px-1 rounded">addr:street=*</code> - Street name</div>
+                    <div><code class="bg-gray-100 px-1 rounded">addr:postcode=*</code> - Postal code</div>
+                    <div><code class="bg-gray-100 px-1 rounded">addr:city=*</code> - City name</div>
+                    <div><code class="bg-gray-100 px-1 rounded">addr:country=*</code> - Country code</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Address Interpolation</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">addr:interpolation=even/odd/all</code></div>
+                    <div><code class="bg-gray-100 px-1 rounded">addr:interpolation=alphabetic</code></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Names -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl font-serif font-semibold mb-4 text-muted-green">Names</h3>
+              <div class="space-y-3">
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Primary and Localized</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">name=*</code> - Primary name</div>
+                    <div><code class="bg-gray-100 px-1 rounded">name:en=*</code> - English name</div>
+                    <div><code class="bg-gray-100 px-1 rounded">name:fr=*</code> - French name</div>
+                    <div><code class="bg-gray-100 px-1 rounded">alt_name=*</code> - Alternative names</div>
+                    <div><code class="bg-gray-100 px-1 rounded">old_name=*</code> - Historical names</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Specialized Naming</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">short_name=*</code> - Abbreviated form</div>
+                    <div><code class="bg-gray-100 px-1 rounded">official_name=*</code> - Legal designation</div>
+                    <div><code class="bg-gray-100 px-1 rounded">name:etymology=*</code> - Origin and meaning</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid lg:grid-cols-2 gap-6">
+            <!-- Properties -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl font-serif font-semibold mb-4 text-muted-green">Properties</h3>
+              <div class="space-y-3">
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Dimensions</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">width=*</code>, <code class="bg-gray-100 px-1 rounded">height=*</code></div>
+                    <div><code class="bg-gray-100 px-1 rounded">length=*</code>, <code class="bg-gray-100 px-1 rounded">depth=*</code></div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Material &amp; Surface</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">material=*</code> - Construction material</div>
+                    <div><code class="bg-gray-100 px-1 rounded">surface=*</code> - Surface type</div>
+                    <div><code class="bg-gray-100 px-1 rounded">colour=*</code> - Color specification</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Operational</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">lit=yes/no/24h</code> - Lighting status</div>
+                    <div><code class="bg-gray-100 px-1 rounded">visibility=*</code> - Visibility quality</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- References -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl font-serif font-semibold mb-4 text-muted-green">References</h3>
+              <div class="space-y-3">
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">External Knowledge</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">wikipedia=lang:Article</code></div>
+                    <div><code class="bg-gray-100 px-1 rounded">wikidata=QID</code> - Wikidata identifier</div>
+                    <div><code class="bg-gray-100 px-1 rounded">ref=*</code> - Official reference</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Contact Information</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">website=*</code> - Web address</div>
+                    <div><code class="bg-gray-100 px-1 rounded">phone=*</code> - Contact number</div>
+                    <div><code class="bg-gray-100 px-1 rounded">email=*</code> - Email address</div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="font-medium text-deep-forest text-sm mb-2">Data Quality</h4>
+                  <div class="text-xs text-gray-600 space-y-1">
+                    <div><code class="bg-gray-100 px-1 rounded">source=*</code> - Data source</div>
+                    <div><code class="bg-gray-100 px-1 rounded">source:date=*</code> - Collection date</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Restrictions -->
+          <div class="bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg p-6">
+            <h3 class="text-xl font-serif font-semibold mb-4 text-muted-green">Restrictions</h3>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <h4 class="font-medium text-deep-forest text-sm mb-2">Access Controls</h4>
+                <div class="text-xs text-gray-700 space-y-1">
+                  <div><code class="bg-white px-1 rounded">access=yes/no/private/permissive</code></div>
+                  <div><code class="bg-white px-1 rounded">access:conditional=*</code> - Time-based restrictions</div>
+                  <div><code class="bg-white px-1 rounded">seasonal=yes/no/spring/summer...</code></div>
+                </div>
+              </div>
+              <div>
+                <h4 class="font-medium text-deep-forest text-sm mb-2">Physical &amp; Vehicle Limits</h4>
+                <div class="text-xs text-gray-700 space-y-1">
+                  <div><code class="bg-white px-1 rounded">motor_vehicle=yes/no</code>, <code class="bg-white px-1 rounded">bicycle=yes/no</code></div>
+                  <div><code class="bg-white px-1 rounded">maxweight=*</code>, <code class="bg-white px-1 rounded">maxheight=*</code></div>
+                  <div><code class="bg-white px-1 rounded">maxwidth=*</code>, <code class="bg-white px-1 rounded">maxlength=*</code></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Specialized Categories -->
+        <div id="specialized" class="mb-16">
+          <h2 class="text-4xl font-serif font-bold mb-8 text-deep-forest">Specialized and Niche Categories</h2>
+
+          <!-- Route Relations -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Route Relations (Detailed)</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              Route relations enable <strong>complex linear feature modeling</strong> beyond simple way aggregation.
+            </p>
+
+            <div class="grid lg:grid-cols-2 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Hiking and Walking Routes</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">International Scale</h5>
+                    <p class="text-xs text-gray-600">European long-distance paths (E-paths), transnational trails</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">National Networks</h5>
+                    <p class="text-xs text-gray-600">National Trails (UK), National Scenic Trails (US), GR routes (France)</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Local Routes</h5>
+                    <p class="text-xs text-gray-600">Community paths, nature trails, themed heritage walks</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow-md p-6">
+                <h4 class="font-semibold text-deep-forest mb-4">Cycling Routes</h4>
+                <div class="space-y-3">
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">International Corridors</h5>
+                    <p class="text-xs text-gray-600">EuroVelo, pan-continental cycling networks</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">National Networks</h5>
+                    <p class="text-xs text-gray-600">Numbered systems with standardized marking</p>
+                  </div>
+                  <div>
+                    <h5 class="font-medium text-muted-green text-sm">Specialized Cycling</h5>
+                    <p class="text-xs text-gray-600">Mountain bike routes, BMX tracks, cycle touring</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-muted-green/10 to-deep-forest/10 rounded-lg p-6">
+              <h4 class="text-lg font-semibold mb-4">Water-Based and Winter Sport Routes</h4>
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-3">Water Routes</h5>
+                  <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Canoe/Kayak:</strong> Paddle trails with river grades and portages</li>
+                    <li>• <strong>Sailing:</strong> Coastal routes and inland waterways</li>
+                    <li>• <strong>Shipping:</strong> Commercial navigation with traffic separation</li>
+                    <li>• <strong>Whitewater:</strong> Slalom courses and play spots</li>
+                  </ul>
+                </div>
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-3">Winter Sport Routes</h5>
+                  <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Skiing:</strong> Pisted runs with avalanche risk management</li>
+                    <li>• <strong>Snowshoeing:</strong> Winter hiking trails</li>
+                    <li>• <strong>Sledding:</strong> Dedicated toboggan runs</li>
+                    <li>• <strong>Ski Touring:</strong> Backcountry routes</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Network Relations -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Network Relations</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              Network relations model complex interconnected systems beyond simple linear features.
+            </p>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div class="bg-white rounded-lg shadow-md p-4 text-center">
+                <i class="fas fa-bus text-2xl text-muted-green mb-2"></i>
+                <h5 class="font-semibold text-deep-forest text-sm mb-2">Public Transport</h5>
+                <p class="text-xs text-gray-600">Routes, stops, lines for integrated journey planning</p>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4 text-center">
+                <i class="fas fa-bolt text-2xl text-muted-green mb-2"></i>
+                <h5 class="font-semibold text-deep-forest text-sm mb-2">Power Distribution</h5>
+                <p class="text-xs text-gray-600">Substations, lines, transformers for grid analysis</p>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4 text-center">
+                <i class="fas fa-oil-can text-2xl text-muted-green mb-2"></i>
+                <h5 class="font-semibold text-deep-forest text-sm mb-2">Pipeline Networks</h5>
+                <p class="text-xs text-gray-600">Pipes, valves, pumping stations for flow modeling</p>
+              </div>
+              <div class="bg-white rounded-lg shadow-md p-4 text-center">
+                <i class="fas fa-wifi text-2xl text-muted-green mb-2"></i>
+                <h5 class="font-semibold text-deep-forest text-sm mb-2">Communication</h5>
+                <p class="text-xs text-gray-600">Towers, cables, exchanges for coverage analysis</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Geographical Names -->
+          <div class="mb-12">
+            <h3 class="text-2xl font-serif font-semibold mb-6 text-muted-green">Geographical Names</h3>
+            <p class="text-gray-700 mb-6 leading-relaxed">
+              Comprehensive naming systems for administrative, settlement, natural, and constructed features.
+            </p>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+              <h4 class="text-lg font-semibold mb-4">Naming Hierarchy and Categories</h4>
+              <div class="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-3">Administrative &amp; Settlement Names</h5>
+                  <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Countries:</strong> Sovereign states (e.g., &#34;France&#34;, &#34;Japan&#34;)</li>
+                    <li>• <strong>States/Provinces:</strong> Subnational divisions (e.g., &#34;California&#34;, &#34;Bavaria&#34;)</li>
+                    <li>• <strong>Cities:</strong> Major population centers (e.g., &#34;Tokyo&#34;, &#34;Paris&#34;)</li>
+                    <li>• <strong>Towns/Villages:</strong> Urban and rural settlements</li>
+                    <li>• <strong>Neighborhoods:</strong> Community-scale divisions</li>
+                  </ul>
+                </div>
+                <div>
+                  <h5 class="font-semibold text-deep-forest mb-3">Natural &amp; Constructed Feature Names</h5>
+                  <ul class="text-sm text-gray-700 space-y-1">
+                    <li>• <strong>Mountains:</strong> Peaks and ranges (e.g., &#34;Mount Everest&#34;, &#34;Alps&#34;)</li>
+                    <li>• <strong>Rivers:</strong> Watercourses (e.g., &#34;Amazon&#34;, &#34;Nile&#34;)</li>
+                    <li>• <strong>Oceans &amp; Seas:</strong> Marine bodies (e.g., &#34;Mediterranean&#34;)</li>
+                    <li>• <strong>Roads:</strong> Transportation corridors (e.g., &#34;Route 66&#34;)</li>
+                    <li>• <strong>Bridges &amp; Tunnels:</strong> Major structures (e.g., &#34;Golden Gate&#34;)</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Specialized Tags -->
+          <div class="bg-gradient-to-r from-deep-forest/10 to-muted-green/10 rounded-lg p-6">
+            <h3 class="text-xl font-serif font-semibold mb-4 text-muted-green">Other Specialized Tags</h3>
+            <div class="grid md:grid-cols-4 gap-4">
+              <div class="bg-white/70 rounded p-3">
+                <h5 class="font-semibold text-deep-forest text-sm mb-2">Lifecycle Tags</h5>
+                <div class="text-xs text-gray-600 space-y-1">
+                  <div><code class="bg-gray-100 px-1 rounded">disused:*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">abandoned:*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">proposed:*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">construction:*</code></div>
+                </div>
+              </div>
+              <div class="bg-white/70 rounded p-3">
+                <h5 class="font-semibold text-deep-forest text-sm mb-2">Temporal Tags</h5>
+                <div class="text-xs text-gray-600 space-y-1">
+                  <div><code class="bg-gray-100 px-1 rounded">seasonal=yes</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">temporary=yes</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">intermittent=yes</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">check_date=*</code></div>
+                </div>
+              </div>
+              <div class="bg-white/70 rounded p-3">
+                <h5 class="font-semibold text-deep-forest text-sm mb-2">Mapper Annotations</h5>
+                <div class="text-xs text-gray-600 space-y-1">
+                  <div><code class="bg-gray-100 px-1 rounded">description=*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">note=*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">fixme=*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">todo=*</code></div>
+                </div>
+              </div>
+              <div class="bg-white/70 rounded p-3">
+                <h5 class="font-semibold text-deep-forest text-sm mb-2">Quality Indicators</h5>
+                <div class="text-xs text-gray-600 space-y-1">
+                  <div><code class="bg-gray-100 px-1 rounded">source=*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">source:date=*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">check_date=*</code></div>
+                  <div><code class="bg-gray-100 px-1 rounded">survey:date=*</code></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-divider"></div>
+
+        <!-- Conclusion -->
+        <section id="conclusion" class="px-6 py-12 max-w-5xl mx-auto">
+          <div class="bg-gradient-to-br from-deep-forest to-muted-green rounded-xl p-8 text-white">
+            <h2 class="text-3xl font-serif font-bold mb-6">Conclusion</h2>
+            <div class="prose prose-lg prose-invert max-w-none">
+              <p class="mb-6 leading-relaxed">
+                OpenStreetMap&#39;s non-building tag classifications constitute a <strong>remarkably comprehensive system for geographic knowledge representation</strong>, spanning from global transportation networks to local community facilities, from ancient geological features to emerging mobility services.
+              </p>
+
+              <div class="grid md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white/10 rounded-lg p-4">
+                  <h3 class="text-xl font-semibold mb-3 text-soft-gold">Key Organizational Principles</h3>
+                  <ul class="space-y-2 text-sm">
+                    <li>• <strong>Functional classification</strong> for routing optimization</li>
+                    <li>• <strong>Lifecycle tagging</strong> for temporal accuracy</li>
+                    <li>• <strong>Dual modeling</strong> approaches for flexibility</li>
+                    <li>• <strong>Relation-based aggregation</strong> for complex systems</li>
+                    <li>• <strong>Multilingual naming</strong> for global accessibility</li>
+                    <li>• <strong>External referencing</strong> for knowledge enrichment</li>
+                  </ul>
+                </div>
+
+                <div class="bg-white/10 rounded-lg p-4">
+                  <h3 class="text-xl font-semibold mb-3 text-soft-gold">System Evolution</h3>
+                  <p class="text-sm leading-relaxed">
+                    The taxonomy&#39;s evolution reflects <strong>community-driven adaptation</strong> to emerging needs—electric vehicle charging infrastructure, micromobility services, pandemic-responsive facility tagging—while maintaining backward compatibility and global consistency.
+                  </p>
+                </div>
+              </div>
+
+              <p class="leading-relaxed">
+                For practitioners, the taxonomy offers <strong>granular precision when needed</strong> and <strong>efficient generalization when appropriate</strong>, supporting diverse use cases from humanitarian response to autonomous vehicle development. The system&#39;s strength lies in its hierarchical organization, dual representation flexibility, and extensive attribution frameworks that enable applications from basic navigation to sophisticated urban analytics.
+              </p>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script>
+        // Mobile TOC Toggle
+        document.getElementById('toc-toggle').addEventListener('click', function() {
+            const toc = document.getElementById('toc');
+            const overlay = document.getElementById('overlay');
+            toc.classList.toggle('open');
+            overlay.classList.toggle('hidden');
+        });
+
+        // Close TOC when clicking outside or on overlay
+        document.addEventListener('click', function(e) {
+            const toc = document.getElementById('toc');
+            const toggle = document.getElementById('toc-toggle');
+            const overlay = document.getElementById('overlay');
+            
+            if (!toc.contains(e.target) && !toggle.contains(e.target)) {
+                toc.classList.remove('open');
+                overlay.classList.add('hidden');
+            }
+        });
+
+        // Close TOC when clicking on overlay
+        document.getElementById('overlay').addEventListener('click', function() {
+            const toc = document.getElementById('toc');
+            toc.classList.remove('open');
+            this.classList.add('hidden');
+        });
+
+        // Close TOC on medium screens and above
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 1024) {
+                const toc = document.getElementById('toc');
+                const overlay = document.getElementById('overlay');
+                toc.classList.remove('open');
+                overlay.classList.add('hidden');
+            }
+        });
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+    </script>
+  
+
+</body></html>
